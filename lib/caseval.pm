@@ -9,11 +9,19 @@ use Carp qw(croak);
 
 use constant STRICT => $ENV{PERL_CASEVAL_STRICT} || 0;
 
+# caseval name must be CamelCase
+my $normal_caseval_name = qr/^[A-Z][a-zA-Z0-9]*$/;
+
+my %forbidden_caseval_name = map { $_ => 1 } qw{
+    BEGIN CHECK DESTROY END INIT UNITCHECK
+    AUTOLOAD STDIN STDOUT STDERR ARGV ARGVOUT ENV INC SIG
+};
+
 sub import {
     my $class = shift;
-    my ($func_name, $type) = @_;
+    my ($name, $type) = @_;
 
-    if (my $e = _validate_func_name($func_name)) {
+    if (my $e = _validate_name($name)) {
         croak($e);
     }
 
@@ -24,17 +32,30 @@ sub import {
     my $_type = $type; # for closure
     my $code = _create_caseval_code($type);
 
-    no strict qw(refs);
     my $caller = caller;
-    *{"${caller}::${func_name}"} = sub () { $_type };
-    *{"${caller}::${func_name}::val"} = $code;
+
+    if ($caller->can($name)) {
+        croak "caseval name '$name' is already defined.";
+    }
+
+    {
+        no strict qw(refs);
+        *{"${caller}::${name}"} = sub () { $_type };
+        *{"${caller}::${name}::val"} = $code;
+    }
 }
 
-sub _validate_func_name {
-    my ($func_name) = @_;
+sub _validate_name {
+    my ($name) = @_;
 
-    if (not defined $func_name) {
-        return "func_name is not defined";
+    if (!$name) {
+        return 'caseval name is not given';
+    }
+    elsif ($name !~ $normal_caseval_name) {
+        return "caseval name '$name' is not CamelCase.";
+    }
+    elsif ($forbidden_caseval_name{$name}) {
+        return "caseval name '$name' is forbidden.";
     }
 
     return;
