@@ -6,6 +6,8 @@ our $VERSION = "0.01";
 
 use Data::Lock qw(dlock);
 use Carp qw(croak);
+use Scalar::Util qw(blessed);
+use Type::Utils qw(compile_match_on_type);
 
 use constant STRICT => $ENV{PERL_CASEVAL_STRICT} || 0;
 
@@ -64,9 +66,10 @@ sub _validate_name {
 sub _validate_type {
     my ($type) = @_;
 
-    if (not defined $type) {
-        return "type is not defined";
-    }
+    return "type is not defined" unless $type;
+    return "type is not a Type::Tiny object" unless blessed($type) && $type->isa('Type::Tiny');
+
+    return;
 }
 
 sub _create_caseval_code {
@@ -74,21 +77,64 @@ sub _create_caseval_code {
 
     my $is_hash = $type->is_a_type_of('HashRef');
     my $is_array = $type->is_a_type_of('ArrayRef');
+    my $is_union = $type->isa('Type::Tiny::Union');
+    my $is_intersection = $type->isa('Type::Tiny::Intersection');
+    my $is_class = $type->isa('Type::Tiny::Class');
 
-    my $code = $is_hash ? sub {
-        my $data = { @_ };
-        if (STRICT) {
-            croak $type->get_message($data) unless $type->check($data);
-            dlock $data;
+    if ($is_hash) {
+        return sub {
+            my $data = { @_ };
+            if (STRICT) {
+                croak $type->get_message($data) unless $type->check($data);
+                dlock $data;
+            }
+            return $data;
         }
-        return $data;
-    } : $is_array ? sub {
-        ...
-    } : sub {
-        ...
-    };
-
-    return $code;
+    }
+    elsif ($is_array) {
+        return sub {
+            my $data = [ @_ ];
+            if (STRICT) {
+                croak $type->get_message($data) unless $type->check($data);
+                dlock $data;
+            }
+            return $data;
+        }
+    }
+    elsif ($is_union) {
+        my $types = $type->type_constraints;
+        my $codes = [ map { ($_, _create_caseval_code($_)) } @$types ];
+        return compile_match_on_type($codes);
+    }
+    elsif ($is_intersection) {
+        my $types = $type->type_constraints;
+        my $base = _create_caseval_code($types->[0]);
+        return sub {
+            my $v = $base->(@_);
+            if (STRICT) {
+                croak $type->get_message($v) unless $type->check($v);
+                dlock $v;
+            }
+            return $v;
+        }
+    }
+    elsif ($is_class) {
+        my $class = $type->class;
+        # require $class; # XXX: neccessary?
+        return sub {
+            $class->new(@_);
+        }
+    }
+    else {
+        return sub {
+            my $v = $_[0];
+            if (STRICT) {
+                croak $type->get_message($v) unless $type->check($v);
+                dlock $v;
+            }
+            return $v;
+        };
+    }
 }
 
 1;
