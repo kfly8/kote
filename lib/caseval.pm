@@ -8,7 +8,7 @@ use Carp qw(croak);
 use Scalar::Util qw(blessed);
 use Type::Tiny;
 
-use caseval::Factory;
+use caseval::Type;
 
 # caseval name must be CamelCase
 my $normal_caseval_name = qr/^[A-Z][a-zA-Z0-9]*$/;
@@ -36,11 +36,14 @@ sub import {
         croak "Invalid type for '$name'";
     }
 
-    my $factory = caseval::Factory->new($name, $type);
+    my $ctype = caseval::Type->new(
+        name   => $name,
+        parent => $type,
+    );
 
     {
         no strict qw(refs);
-        *{"${caller}::${name}"} = sub () { $factory }
+        *{"${caller}::${name}"} = sub () { $ctype }
     }
 }
 
