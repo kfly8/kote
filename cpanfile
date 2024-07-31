@@ -1,6 +1,5 @@
 requires 'perl', '5.020000';
 
-requires 'Data::Lock';
 requires 'Type::Tiny', '1.010002';
 
 on 'test' => sub {

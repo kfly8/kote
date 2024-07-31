@@ -4,7 +4,10 @@ use warnings;
 
 our $VERSION = "0.01";
 
-use Carp ();
+use Carp qw(croak);
+use Scalar::Util qw(blessed);
+
+use Type::Tiny;
 use caseval::Factory;
 
 # caseval name must be CamelCase
@@ -20,15 +23,20 @@ sub import {
     my ($name, $check) = @_;
 
     if (my $e = _validate_name($name)) {
-        Carp::croak($e);
+        croak($e);
     }
 
     my $caller = caller;
     if ($caller->can($name)) {
-        Carp::croak "'$name' is already defined.";
+        croak "'$name' is already defined.";
     }
 
-    my $factory = caseval::Factory->new($name, $check);
+    my $type = Types::TypeTiny::to_TypeTiny($check);
+    unless (blessed($type) && $type->isa('Type::Tiny')) {
+        croak "Invalid check";
+    }
+
+    my $factory = caseval::Factory->new($name, $type);
 
     {
         no strict qw(refs);

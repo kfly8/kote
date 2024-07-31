@@ -8,15 +8,14 @@ use caseval::Prototype;
 use constant STRICT => $ENV{PERL_CASEVAL_STRICT} || 1;
 
 sub new {
-    my ($class, $name, $check) = @_;
+    my ($class, $name, $type) = @_;
     # validate $name, $check
 
-    bless [$name, $check] => $class;
+    bless [$name, $type] => $class;
 }
 
 sub name() { $_[0]->[0] }
-sub check() { $_[0]->[1] }
-sub creater() { $_[0]->[2] }
+sub type() { $_[0]->[1] }
 
 sub create {
     my ($self, $value) = @_;
@@ -25,22 +24,12 @@ sub create {
 
     if (STRICT) {
         local $_ = $value;
-        if (!$self->check->($value)) {
+        if (!$self->type->check($value)) {
             return (undef, "invalid value");
         }
     }
 
     return (caseval::Prototype->new($self->name, $value), undef);
-}
-
-sub type {
-    my ($self) = @_;
-
-    require Type::Tiny;
-    Type::Tiny->new(
-        name       => $self->name,
-        constraint => sub { ... },
-    );
 }
 
 1;
