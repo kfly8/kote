@@ -6,8 +6,8 @@ our $VERSION = "0.01";
 
 use Carp qw(croak);
 use Scalar::Util qw(blessed);
-
 use Type::Tiny;
+
 use caseval::Factory;
 
 # caseval name must be CamelCase
@@ -20,7 +20,7 @@ my %forbidden_caseval_name = map { $_ => 1 } qw{
 
 sub import {
     my $class = shift;
-    my ($name, $check) = @_;
+    my ($name, $type) = @_;
 
     if (my $e = _validate_name($name)) {
         croak($e);
@@ -31,9 +31,9 @@ sub import {
         croak "'$name' is already defined.";
     }
 
-    my $type = Types::TypeTiny::to_TypeTiny($check);
+    $type = Types::TypeTiny::to_TypeTiny($type);
     unless (blessed($type) && $type->isa('Type::Tiny')) {
-        croak "Invalid check";
+        croak "Invalid type for '$name'";
     }
 
     my $factory = caseval::Factory->new($name, $type);

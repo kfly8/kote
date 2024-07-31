@@ -3,16 +3,20 @@ use strict;
 use warnings;
 
 sub new {
-    my ($class, $name, $value, $operations) = @_;
-    bless [$name, $value, $operations] => $class;
+    my ($class, $typename, $value, $operations) = @_;
+    bless [$typename, $value, $operations] => $class;
 }
 
-sub name() { $_[0]->[0] }
+sub __typename() { $_[0]->[0] }
 sub value() { $_[0]->[1] }
 
 sub equals {
     my ($self, $other) = @_;
-    return $self->name eq $other->name && $self->value eq $other->value;
+    return unless Scalar::Util::blessed($other) && $other->can('__typename');
+    return unless $self->__typename eq $other->__typename;
+
+    # TODO
+    $self->value eq $other->value;
 }
 
 1;
