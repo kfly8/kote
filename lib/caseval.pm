@@ -9,7 +9,6 @@ use Scalar::Util qw(blessed);
 use Type::Tiny;
 
 use caseval::Type;
-use caseval::Types;
 
 # caseval name must be CamelCase
 my $normal_caseval_name = qr/^[A-Z][a-zA-Z0-9]*$/;
@@ -42,13 +41,13 @@ sub import {
         parent => $type,
     );
 
-    #$ctype->coercion->freeze;
-    caseval::Types->meta->add_type($ctype);
-
-    {
-        no strict qw(refs);
-        *{"${caller}::${name}"} = sub () { $ctype }
+    $ctype->coercion->freeze;
+    unless ($caller->can('meta')) {
+        require Type::Library;
+        Type::Library->import({ into => $caller }, '-base');
     }
+
+    $caller->meta->add_type($ctype);
 }
 
 sub _validate_name {
