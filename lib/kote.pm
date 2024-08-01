@@ -8,8 +8,7 @@ use Carp qw(croak);
 use Scalar::Util qw(blessed);
 
 use Type::Tiny;
-use Type::Registry;
-use Eval::TypeTiny qw( set_subname );
+use Eval::TypeTiny qw( set_subname type_to_coderef );
 
 use Type::Kote;
 
@@ -93,22 +92,19 @@ sub _create_type {
 sub _add_type {
     my ($class, $name, $type, $caller) = @_;
 
-    no strict "refs";
-
-    for my $exportable ( @{ $type->exportables } ) {
-        my $name = $exportable->{name};
-        my $code = $exportable->{code};
-        my $tags = $exportable->{tags};
-
-        return "'$name' is already defined"
-            if $caller->can($name);
-
-        *{"$caller\::$name"} = set_subname( "$caller\::$name", $code);
-        push @{"$caller\::EXPORT_OK"}, $name;
-        push @{ ${"$caller\::EXPORT_TAGS"}{$_} ||= [] }, $name for @$tags;
+    if ($caller->can($name)) {
+        return "'$name' is already defined";
     }
 
-    Type::Registry->for_class( $caller )->add_type( $type, $name );
+    my $code = type_to_coderef($type);
+
+    {
+        no strict "refs";
+        *{"$caller\::$name"} = set_subname( "$caller\::$name", $code);
+        push @{"$caller\::EXPORT_OK"}, $name;
+        push @{ ${"$caller\::EXPORT_TAGS"}{types} ||= [] }, $name;
+    }
+
     return;
 }
 
