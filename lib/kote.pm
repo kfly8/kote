@@ -29,13 +29,11 @@ sub import {
     $err = $class->_validate_name($name);
     croak $err if $err;
 
-    $err = $class->_validate_type($type);
-    croak "$name: $err" if $err;
-
     my $caller = caller;
-    $type = $class->_create_type($name, $type, $caller);
+    (my $kote, $err) = $class->_create_kote($name, $type, $caller);
+    croak $err if $err;
 
-    $err = $class->_add_type($name, $type, $caller);
+    $err = $class->_add_kote($name, $kote, $caller);
     croak $err if $err;
 
     {
@@ -63,19 +61,13 @@ sub _validate_name {
     return;
 }
 
-sub _validate_type {
-    my ($class, $type) = @_;
+sub _create_kote {
+    my ($class, $name, $type, $caller) = @_;
 
     $type = Types::TypeTiny::to_TypeTiny($type);
     unless (blessed($type) && $type->isa('Type::Tiny')) {
-        return "Type must be a Type::Tiny object.";
+        return (undef, "$name: type must be able to be a Type::Tiny");
     }
-
-    return;
-}
-
-sub _create_type {
-    my ($class, $name, $type, $caller) = @_;
 
     my $kote = Type::Kote->new(
         name   => $name,
@@ -83,20 +75,20 @@ sub _create_type {
         library => $caller,
     );
 
-    # TODO: comment why need this.
+    # make kote immutable
     $kote->coercion->freeze;
 
-    return $kote;
+    return ($kote, undef);
 }
 
-sub _add_type {
-    my ($class, $name, $type, $caller) = @_;
+sub _add_kote {
+    my ($class, $name, $kote, $caller) = @_;
 
     if ($caller->can($name)) {
         return "'$name' is already defined";
     }
 
-    my $code = type_to_coderef($type);
+    my $code = type_to_coderef($kote);
 
     {
         no strict "refs";

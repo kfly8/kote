@@ -43,7 +43,7 @@ subtest 'Check valid kote name' => sub {
 
 subtest 'Check valid type' => sub {
     eval "use kote Bar => 'Str';";
-    like $@, qr/^Bar: Type must be a Type::Tiny/;
+    like $@, qr/^Bar: type must be able to be a Type::Tiny/;
 };
 
 done_testing;
