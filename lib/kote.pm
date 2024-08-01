@@ -7,7 +7,7 @@ our $VERSION = "0.01";
 use Carp qw(croak);
 use Scalar::Util qw(blessed);
 
-use Type::Tiny;
+use Types::TypeTiny ();
 use Eval::TypeTiny qw( set_subname type_to_coderef );
 
 use Type::Kote;
@@ -36,13 +36,8 @@ sub import {
     $err = $class->_add_kote($name, $kote, $caller);
     croak $err if $err;
 
-    {
-        # TODO: don't use @ISA
-        no strict "refs";
-        unless ($caller->isa('Exporter::Tiny')) {
-            push @{ "$caller\::ISA" }, 'Exporter::Tiny';
-        }
-    }
+    $err = $class->_setup_exporter($caller);
+    croak $err if $err;
 }
 
 sub _validate_name {
@@ -61,10 +56,16 @@ sub _validate_name {
     return;
 }
 
+sub _to_type {
+    my ($class, $type) = @_;
+
+    Types::TypeTiny::to_TypeTiny($type);
+}
+
 sub _create_kote {
     my ($class, $name, $type, $caller) = @_;
 
-    $type = Types::TypeTiny::to_TypeTiny($type);
+    $type = $class->_to_type($type);
     unless (blessed($type) && $type->isa('Type::Tiny')) {
         return (undef, "$name: type must be able to be a Type::Tiny");
     }
@@ -95,6 +96,25 @@ sub _add_kote {
         *{"$caller\::$name"} = set_subname( "$caller\::$name", $code);
         push @{"$caller\::EXPORT_OK"}, $name;
         push @{ ${"$caller\::EXPORT_TAGS"}{types} ||= [] }, $name;
+    }
+
+    return;
+}
+
+sub _exporter_class {
+    'Exporter::Tiny';
+}
+
+sub _setup_exporter {
+    my ($class, $caller) = @_;
+
+    my $exporter_class = $class->_exporter_class;
+
+    unless ($caller->isa($exporter_class)) {
+        no strict "refs";
+        push @{ "$caller\::ISA" }, $exporter_class;
+        ( my $file = $caller ) =~ s{::}{/}g;
+        $INC{"$file.pm"} ||= __FILE__;
     }
 
     return;
