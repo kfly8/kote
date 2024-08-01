@@ -1,4 +1,4 @@
-name = "caseval"
+name = "kote"
 badges = ["github-actions/test.yml", "metacpan"]
 authority="cpan:KFLY"
 module_maker="ModuleBuildTiny"

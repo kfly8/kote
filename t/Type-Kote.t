@@ -2,11 +2,11 @@ use Test2::V0;
 
 use Types::Standard qw(Str Int Dict);
 
-use caseval CharacterName => Str & sub { /^[A-Z][a-z]+$/ };
-use caseval MonsterName => Str & sub { /^[A-Z][a-z]+$/ };
-use caseval CharacterLevel => Int & sub { $_ >= 1 && $_ <= 100 };
+use kote CharacterName => Str & sub { /^[A-Z][a-z]+$/ };
+use kote MonsterName => Str & sub { /^[A-Z][a-z]+$/ };
+use kote CharacterLevel => Int & sub { $_ >= 1 && $_ <= 100 };
 
-use caseval Character => Dict[
+use kote Character => Dict[
     name => CharacterName,
     level => CharacterLevel,
 ];

@@ -1,4 +1,4 @@
-package caseval::Type;
+package Type::Kote;
 use strict;
 use warnings;
 

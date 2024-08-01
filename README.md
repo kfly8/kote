@@ -1,15 +1,15 @@
 
 # NAME
 
-caseval - It's new $module
+kote - It's new $module
 
 # SYNOPSIS
 
-    use caseval;
+    use kote;
 
 # DESCRIPTION
 
-caseval is ...
+kote is ...
 
 # LICENSE
 

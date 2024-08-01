@@ -6,20 +6,20 @@ use Types::Standard -types;
 use Types::Common::String -types;
 use Carp qw(croak);
 
-use caseval UnvalidatedCustomerInfo => Dict[
+use kote UnvalidatedCustomerInfo => Dict[
     first_name => Str,
     last_name => Str,
     email_address => Str,
 ];
 
-use caseval PersonalName => Dict[
+use kote PersonalName => Dict[
     first_name => StrLength[1, 100],
     last_name => StrLength[1, 100],
 ];
 
-use caseval EmailAddress => Str; # TODO
+use kote EmailAddress => Str; # TODO
 
-use caseval CustomerInfo => Dict[
+use kote CustomerInfo => Dict[
     name => PersonalName,
     email_address => EmailAddress
 ];

@@ -7,10 +7,10 @@ push @EXPORT_OK, qw(toCharacterName);
 
 use Types::Standard qw(Str Int Dict);
 
-use caseval UnvalidatedCharacterName => Str;
-use caseval CharacterName => Str & sub { /^[A-Z][a-z]+$/ };
+use kote UnvalidatedCharacterName => Str;
+use kote CharacterName => Str & sub { /^[A-Z][a-z]+$/ };
 
-use caseval MonsterName => Str & sub { /^[A-Z][a-z]+$/ };
+use kote MonsterName => Str & sub { /^[A-Z][a-z]+$/ };
 
 sub run {
     my ($class, $name) = @_;

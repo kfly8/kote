@@ -1,4 +1,4 @@
-package caseval;
+package kote;
 use strict;
 use warnings;
 
@@ -8,12 +8,12 @@ use Carp qw(croak);
 use Scalar::Util qw(blessed);
 use Type::Tiny;
 
-use caseval::Type;
+use Type::Kote;
 
-# caseval name must be CamelCase
-my $normal_caseval_name = qr/^[A-Z][a-zA-Z0-9]*$/;
+# kote name must be CamelCase
+my $normal_kote_name = qr/^[A-Z][a-zA-Z0-9]*$/;
 
-my %forbidden_caseval_name = map { $_ => 1 } qw{
+my %forbidden_kote_name = map { $_ => 1 } qw{
     BEGIN CHECK DESTROY END INIT UNITCHECK
     AUTOLOAD STDIN STDOUT STDERR ARGV ARGVOUT ENV INC SIG
 };
@@ -36,31 +36,31 @@ sub import {
         croak "Invalid type for '$name'";
     }
 
-    my $ctype = caseval::Type->new(
+    my $ktype = Type::Kote->new(
         name   => $name,
         parent => $type,
     );
 
-    $ctype->coercion->freeze;
+    $ktype->coercion->freeze;
     unless ($caller->can('meta')) {
         require Type::Library;
         Type::Library->import({ into => $caller }, '-base');
     }
 
-    $caller->meta->add_type($ctype);
+    $caller->meta->add_type($ktype);
 }
 
 sub _validate_name {
     my ($name) = @_;
 
     if (!$name) {
-        return 'caseval name is not given';
+        return 'kote name is not given';
     }
-    elsif ($name !~ $normal_caseval_name) {
-        return "caseval name '$name' is not CamelCase.";
+    elsif ($name !~ $normal_kote_name) {
+        return "kote name '$name' is not CamelCase.";
     }
-    elsif ($forbidden_caseval_name{$name}) {
-        return "caseval name '$name' is forbidden.";
+    elsif ($forbidden_kote_name{$name}) {
+        return "kote name '$name' is forbidden.";
     }
 
     return;
@@ -73,15 +73,15 @@ __END__
 
 =head1 NAME
 
-caseval - It's new $module
+kote - It's new $module
 
 =head1 SYNOPSIS
 
-    use caseval;
+    use kote;
 
 =head1 DESCRIPTION
 
-caseval is ...
+kote is ...
 
 =head1 LICENSE
 
