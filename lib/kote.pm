@@ -6,7 +6,10 @@ our $VERSION = "0.01";
 
 use Carp qw(croak);
 use Scalar::Util qw(blessed);
+
 use Type::Tiny;
+use Type::Registry;
+use Eval::TypeTiny qw( set_subname );
 
 use Type::Kote;
 
@@ -22,36 +25,31 @@ sub import {
     my $class = shift;
     my ($name, $type) = @_;
 
-    if (my $e = _validate_name($name)) {
-        croak($e);
-    }
+    my $err;
+
+    $err = $class->_validate_name($name);
+    croak $err if $err;
+
+    $err = $class->_validate_type($type);
+    croak "$name: $err" if $err;
 
     my $caller = caller;
-    if ($caller->can($name)) {
-        croak "'$name' is already defined.";
+    $type = $class->_create_type($name, $type, $caller);
+
+    $err = $class->_add_type($name, $type, $caller);
+    croak $err if $err;
+
+    {
+        # TODO: don't use @ISA
+        no strict "refs";
+        unless ($caller->isa('Exporter::Tiny')) {
+            push @{ "$caller\::ISA" }, 'Exporter::Tiny';
+        }
     }
-
-    $type = Types::TypeTiny::to_TypeTiny($type);
-    unless (blessed($type) && $type->isa('Type::Tiny')) {
-        croak "Invalid type for '$name'";
-    }
-
-    my $ktype = Type::Kote->new(
-        name   => $name,
-        parent => $type,
-    );
-
-    $ktype->coercion->freeze;
-    unless ($caller->can('meta')) {
-        require Type::Library;
-        Type::Library->import({ into => $caller }, '-base');
-    }
-
-    $caller->meta->add_type($ktype);
 }
 
 sub _validate_name {
-    my ($name) = @_;
+    my ($class, $name) = @_;
 
     if (!$name) {
         return 'kote name is not given';
@@ -63,6 +61,54 @@ sub _validate_name {
         return "kote name '$name' is forbidden.";
     }
 
+    return;
+}
+
+sub _validate_type {
+    my ($class, $type) = @_;
+
+    $type = Types::TypeTiny::to_TypeTiny($type);
+    unless (blessed($type) && $type->isa('Type::Tiny')) {
+        return "Type must be a Type::Tiny object.";
+    }
+
+    return;
+}
+
+sub _create_type {
+    my ($class, $name, $type, $caller) = @_;
+
+    my $kote = Type::Kote->new(
+        name   => $name,
+        parent => $type,
+        library => $caller,
+    );
+
+    # TODO: comment why need this.
+    $kote->coercion->freeze;
+
+    return $kote;
+}
+
+sub _add_type {
+    my ($class, $name, $type, $caller) = @_;
+
+    no strict "refs";
+
+    for my $exportable ( @{ $type->exportables } ) {
+        my $name = $exportable->{name};
+        my $code = $exportable->{code};
+        my $tags = $exportable->{tags};
+
+        return "'$name' is already defined"
+            if $caller->can($name);
+
+        *{"$caller\::$name"} = set_subname( "$caller\::$name", $code);
+        push @{"$caller\::EXPORT_OK"}, $name;
+        push @{ ${"$caller\::EXPORT_TAGS"}{$_} ||= [] }, $name for @$tags;
+    }
+
+    Type::Registry->for_class( $caller )->add_type( $type, $name );
     return;
 }
 
