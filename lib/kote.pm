@@ -180,7 +180,8 @@ The types declared by Kote are based on Type::Tiny, so we can use Type::Tiny's a
 
 =head1 CONCEPTS
 
-Kote is inspired by the following book. L<Domain Modeling Made Functional|https://pragprog.com/titles/swdddf/>
+Kote is inspired by the following book, L<Domain Modeling Made Functional|https://pragprog.com/titles/swdddf/>.
+
 The phrase "Make illegal states unrepresentable" is a particularly important concept in Kote.
 This idea works for dynamically typed languages like Perl too. By clearly stating the legal values, it make to easier to maintain codes.
 
@@ -241,7 +242,7 @@ Throw an exception if an error is not handled. That is, when calling the create 
 
 We can export functions as well as types by pushing them to C<@EXPORT_OK>.
 
-    pakcage My::Character {
+    package My::Character {
         our @EXPORT_OK;
         push @EXPORT_OK, qw(is_alice);
 

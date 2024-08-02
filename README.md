@@ -55,7 +55,8 @@ Kote - **means "gauntlet"🧤 in Japanese** - is a type framework based on Type:
 
 # CONCEPTS
 
-Kote is inspired by the following book. [Domain Modeling Made Functional](https://pragprog.com/titles/swdddf/)
+Kote is inspired by the following book, [Domain Modeling Made Functional](https://pragprog.com/titles/swdddf/).
+
 The phrase "Make illegal states unrepresentable" is a particularly important concept in Kote.
 This idea works for dynamically typed languages like Perl too. By clearly stating the legal values, it make to easier to maintain codes.
 
@@ -131,7 +132,7 @@ my $alice = Character->create({name => 'Alice', level => 1});
 We can export functions as well as types by pushing them to `@EXPORT_OK`.
 
 ```perl
-pakcage My::Character {
+package My::Character {
     our @EXPORT_OK;
     push @EXPORT_OK, qw(is_alice);
 
