@@ -10,25 +10,29 @@ use Types::Standard -types;
 
 use kote CharacterName  => Str & sub { /^[A-Z][a-z]+$/ };
 use kote CharacterLevel => Int & sub { $_ >= 1 && $_ <= 100 };
+
 use kote Character => Dict[
-    name => CharacterName,
+    name  => CharacterName,
     level => CharacterLevel,
 ];
 
 my ($alice, $err) = Character->create({ name => 'Alice', level => 1 });
-is $alice->{name}, 'Alice';
+say $alice->{name}; # Alice
+say $err; # undef
 
 my ($bob, $err) = Character->create({ name => 'bob', level => 0 });
-say $err; # Error
+say $bob; # undef
+say $err; # Error!
 ```
 
 # DESCRIPTION
 
 Kote - **means "gauntlet"🧤 in Japanese** - is a type framework based on Type::Tiny.
+Kote aims to simplify type declarations and value checks in Perl.
 
 ## FEATURES
 
-- Simplify type declarations
+- Simplify Type Declarations
 
     Type declarations just need to write in one place.
 
@@ -36,7 +40,7 @@ Kote - **means "gauntlet"🧤 in Japanese** - is a type framework based on Type:
     use kote CharacterName => Str & sub { /^[A-Z][a-z]+$/ };
     ```
 
-- Easy to check value
+- Easy to Check Values
 
     Only legal values can be created.
 
@@ -45,7 +49,7 @@ Kote - **means "gauntlet"🧤 in Japanese** - is a type framework based on Type:
     croak $err if $err; # Must handle error!
     ```
 
-- Type::Tiny based
+- Type::Tiny Based
 
     The types declared by Kote are based on Type::Tiny, so we can use Type::Tiny's all features.
 
@@ -72,10 +76,10 @@ use kote CharacterName => Str & sub { /^[A-Z][a-z]+$/ };
 ```
 
 The first argument is the type name, which must be CamelCase.
-The second argument is the type constraint, which must be a Type::Tiny object or one that can be converted to a Type::Tiny object.
+The second argument is the type constraint, which must be a Type::Tiny object or convertible to one.
 
-Using Kote inherits Exporter::Tiny, and automatically adds the declared type to `@EXPORT_OK`.
-This means that you can import types as follows.
+Using Kote inherits [Exporter::Tiny](https://metacpan.org/pod/Exporter%3A%3ATiny) and automatically adds the declared type to `@EXPORT_OK`.
+This means you can import types as follows:
 
 ```perl
 package main;
@@ -111,14 +115,14 @@ The `create` method returns a error message if the given value does not satisfy 
 create(Any $value) -> (Any $value, undef) or (undef, Str $error)
 ```
 
-Note that if the value is a reference, it be converted to an immutable.
+If the value is a reference, it will be converted to an immutable:
 
 ```
 $alice->{name} = 'Bob'; # Error
 $alice->{unknown}; # Error
 ```
 
-Throw an exception if an error is not handled. That is, when calling the create method in scalar or void context, throw an exception:
+An exception is thrown if an error is not handled. Calling the create method in scalar or void context will throw an exception:
 
 ```perl
 my $alice = Character->create({name => 'Alice', level => 1});
@@ -127,9 +131,9 @@ my $alice = Character->create({name => 'Alice', level => 1});
 
 # TIPS
 
-## Export functions
+## Export Functions
 
-We can export functions as well as types by pushing them to `@EXPORT_OK`.
+You can export functions as well as types by pushing them to `@EXPORT_OK`.
 
 ```perl
 package My::Character {
@@ -145,7 +149,7 @@ package main;
 use My::Character qw(CharacterName is_alice);
 ```
 
-## Skip check value
+## Skip Check Value
 
 If `$kote::STRICT` is set to false, validation of the value and conversion to make it to immutable are skipped.
 However, be careful not to skip values that need to be validated.
