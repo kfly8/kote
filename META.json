@@ -1,10 +1,10 @@
 {
-   "abstract" : "It's new $module",
+   "abstract" : "Type::Tiny based type framework",
    "author" : [
       "kobaken <kentafly88@gmail.com>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Minilla/v3.1.22, CPAN::Meta::Converter version 2.150010",
+   "generated_by" : "Minilla/v3.1.23, CPAN::Meta::Converter version 2.150010",
    "license" : [
       "perl_5"
    ],
@@ -42,17 +42,31 @@
       },
       "runtime" : {
          "requires" : {
-            "perl" : "5.008001"
+            "Data::Lock" : "1.03",
+            "Type::Tiny" : "1.010002",
+            "perl" : "5.020000"
          }
       },
       "test" : {
          "requires" : {
-            "Test::More" : "0.98"
+            "Test2::Suite" : "0.000140"
          }
       }
    },
    "release_status" : "unstable",
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/kfly8/kote/issues"
+      },
+      "homepage" : "https://github.com/kfly8/kote",
+      "repository" : {
+         "type" : "git",
+         "url" : "https://github.com/kfly8/kote.git",
+         "web" : "https://github.com/kfly8/kote"
+      }
+   },
    "version" : "0.01",
+   "x_authority" : "cpan:KFLY",
    "x_serialization_backend" : "JSON::PP version 4.16",
    "x_static_install" : 1
 }
