@@ -1,6 +1,6 @@
 use Test2::V0;
 
-use Types::Standard qw(Str Int Dict);
+use Types::Standard qw(Str Int Dict ArrayRef);
 
 use kote CharacterName => Str & sub { /^[A-Z][a-z]+$/ };
 use kote MonsterName => Str & sub { /^[A-Z][a-z]+$/ };
@@ -11,8 +11,14 @@ use kote Character => Dict[
     level => CharacterLevel,
 ];
 
+use kote CharacterList => ArrayRef[Character];
+
 subtest 'name' => sub {
     is +CharacterName->name, 'CharacterName';
+};
+
+subtest 'library' => sub {
+    is +CharacterName->library, 'main';
 };
 
 subtest 'create' => sub {
@@ -63,6 +69,37 @@ subtest 'create' => sub {
 
         (my $bob, $err) = Character->create({name => 'bob', level => 0});
         is $bob, undef, 'invalid value';
+        ok $err, 'Error';
+    };
+
+    subtest 'When type is arrayref' => sub {
+        my $err;
+
+        (my $list, $err) = CharacterList->create([
+            {name => 'Alice', level => 99},
+            {name => 'Bob', level => 1},
+        ]);
+        is $err, undef, 'No error';
+
+        is $list, [
+            {
+                name => 'Alice',
+                level => 99,
+            },
+            {
+                name => 'Bob',
+                level => 1,
+            },
+        ];
+        is $list->[0]{name}, 'Alice', 'access to field';
+        ok dies { $list->[0]{name} = 'Bob' }, 'assign to readonly field';
+        ok dies { $list->[0]{foo} }, 'access to unknown field';
+
+        (my $list2, $err) = CharacterList->create([
+            {name => 'Alice', level => 99},
+            {name => 'Bob', level => 0},
+        ]);
+        is $list2, undef, 'invalid value';
         ok $err, 'Error';
     };
 };
