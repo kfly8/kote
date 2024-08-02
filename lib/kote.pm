@@ -127,7 +127,7 @@ __END__
 
 =head1 NAME
 
-kote - It's new $module
+kote - Type::Tiny based type framework
 
 =head1 SYNOPSIS
 
