@@ -149,102 +149,114 @@ kote - Type::Tiny based type framework
     my ($bob, $err) = Character->create({ name => 'bob', level => 0 });
     say $err; # Error
 
-    Charcter->isa('Type::Tiny'); # true
-
 =head1 DESCRIPTION
 
-kote - B<means "gauntlet"🧤 in Japanese> - is a type framework based on Type::Tiny.
+Kote - B<means "gauntlet"🧤 in Japanese> - is a type framework based on Type::Tiny.
 
 =head2 FEATURES
 
 =over 2
 
-=item * 型の宣言が簡潔
+=item * Simplify type declarations
 
-型名と制約を一度書くだけで、型を宣言できます。
+Type declarations just need to write in one place.
 
     use kote CharacterName => Str & sub { /^[A-Z][a-z]+$/ };
 
-=item * 値の検証が容易
+=item * Easy to check value
 
-値が型を満たしているか簡単に検証できます。
+Only legal values can be created.
 
     my ($alice, $err) = CharacterName->create('Alice');
+    croak $err if $err; # Must handle error!
 
-=item * Type::Tiny ベース
+=item * Type::Tiny based
 
-koteで宣言した型は、Type::Tinyをベースにしているので、Type::Tinyの機能をそのまま利用できます。
+The types declared by Kote are based on Type::Tiny, so we can use Type::Tiny's all features.
 
-    CharacterName->check('Alice'); # true
+    CharacterName->isa('Type::Tiny'); # true
 
 =back
 
 =head1 CONCEPTS
 
-koteは、次の書籍に触発されています。L<Domain Modeling Made Functional|https://pragprog.com/titles/swdddf/domain-modeling-made-functional/>
-ドメイン空間ごとにとりうる値を型で宣言し、その振る舞いを純粋関数で記述しやすくできないか考え、デザインしています。
+Kote is inspired by the following book. L<Domain Modeling Made Functional|https://pragprog.com/titles/swdddf/>
+The phrase "Make illegal states unrepresentable" is a particularly important concept in Kote.
+This idea works for dynamically typed languages like Perl too. By clearly stating the legal values, it make to easier to maintain codes.
 
 =head1 DETAILS
 
-=head2 declare type
+=head2 Declare types
 
-koteは、型を宣言するための構文を提供します。
+Kote provides a syntax for declaring types.
 
     package My::Character;
     use kote CharacterName => Str & sub { /^[A-Z][a-z]+$/ };
 
-左辺の型名はCamelCaseである必要があります。右辺の制約は、Type::Tinyはもちろんのこと、Type::Tinyになれる制約を指定できます。
-koteを利用するとExporter::Tinyを継承し、宣言した型を、C<@EXPORT_OK>に自動追加します。
-つまり、次のように型をインポートできます。
+The first argument is the type name, which must be CamelCase.
+The second argument is the type constraint, which must be a Type::Tiny object or one that can be converted to a Type::Tiny object.
+
+Using Kote inherits Exporter::Tiny, and automatically adds the declared type to C<@EXPORT_OK>.
+This means that you can import types as follows.
 
     package main;
     use My::Character qw(CharacterName);
 
     CharacterName->check('Alice'); # true
 
-=head2 create value
+Order of type declarations is important, child types must be declared before parent types.
 
-koteで宣言した型は、C<create>メソッドを持ちます。
+    # Bad order
+    use kote Parent => Dict[ name => Child ];
+    use kote Child => Str;
+
+    # Good order
+    use kote Child => Str;
+    use kote Parent => Dict[ name => Child ];
+
+=head2 Create value method
+
+The type declared in Kote has a C<create> method.
 
     my ($alice, $err) = Character->create({name => 'Alice', level => 1});
     croak $err if $err;
 
-C<create>メソッドは、与えられた値が型を満たさない場合はエラーメッセージを返し、満たす場合はその値を返します。
-ただし、値がリファレンスだった場合は、不変なリファレンスに変換して返します。
+The C<create> method returns a error message if the given value does not satisfy the type, and returns the value if it does:
+
+    create(Any $value) -> (Any $value, undef) or (undef, Str $error)
+
+Note that if the value is a reference, it be converted to an immutable.
 
     $alice->{name} = 'Bob'; # Error
     $alice->{unknown}; # Error
 
-また、エラーハンドリングを行わなかった場合、例外が発生します。
+Throw an exception if an error is not handled. That is, when calling the create method in scalar or void context, throw an exception:
 
     my $alice = Character->create({name => 'Alice', level => 1});
-    # => Must handle error!!
+    # => Exception: Must handle error!!
 
 =head1 TIPS
 
-=head2 export functions
+=head2 Export functions
 
-関数のエクスポートが、C<@EXPORT_OK>に関数を追加すればできます。
+We can export functions as well as types by pushing them to C<@EXPORT_OK>.
 
-    pakcage My::Character;
+    pakcage My::Character {
+        our @EXPORT_OK;
+        push @EXPORT_OK, qw(is_alice);
 
-    our @EXPORT_OK;
-    push @EXPORT_OK, qw(is_alice);
+        use kote CharacterName => Str & sub { /^[A-Z][a-z]+$/ };
 
-    use kote CharacterName => Str & sub { /^[A-Z][a-z]+$/ };
-
-    sub is_alice($name) {
-        # CharacterName->assert_valid($name);
-        $name eq 'Alice';
+        sub is_alice($name) { $name eq 'Alice' }
     }
 
     package main;
     use My::Character qw(CharacterName is_alice);
 
-=head2 skip check value
+=head2 Skip check value
 
-パフォーマンスの都合、値の検証や不変なリファレンスへの変換をスキップしたい場合、C<$kote::STRICT>を0に設定します。
-ただし、検証すべき値をスキップしないように十分注意してください。
+If C<$kote::STRICT> is set to false, validation of the value and conversion to make it to immutable are skipped.
+However, be careful not to skip values that need to be validated.
 
     local $kote::STRICT = 0;
     my ($alice, $err) = CharacterName->create(1234);
@@ -252,7 +264,7 @@ C<create>メソッドは、与えられた値が型を満たさない場合は�
 
 =head1 THANKS
 
-L<Type::Tiny>の作者、Toby Inkster氏に感謝します。
+Toby Inkster, the author of L<Type::Tiny>.
 
 =head1 LICENSE
 
