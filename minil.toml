@@ -1,5 +1,5 @@
 name = "kote"
-badges = ["github-actions/test.yml", "metacpan"]
+badges = ["github-actions/test.yml", "coveralls", "metacpan"]
 authority="cpan:KFLY"
 module_maker="ModuleBuildTiny"
 static_install = "auto"

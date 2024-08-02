@@ -1,4 +1,4 @@
-[![Actions Status](https://github.com/kfly8/kote/actions/workflows/test.yml/badge.svg)](https://github.com/kfly8/kote/actions) [![MetaCPAN Release](https://badge.fury.io/pl/kote.svg)](https://metacpan.org/release/kote)
+[![Actions Status](https://github.com/kfly8/kote/actions/workflows/test.yml/badge.svg)](https://github.com/kfly8/kote/actions) [![Coverage Status](https://img.shields.io/coveralls/kfly8/kote/main.svg?style=flat)](https://coveralls.io/r/kfly8/kote?branch=main) [![MetaCPAN Release](https://badge.fury.io/pl/kote.svg)](https://metacpan.org/release/kote)
 # NAME
 
 kote - Type::Tiny based type framework
