@@ -12,11 +12,14 @@ sub create {
 
     Carp::croak "Must handle error" unless wantarray;
 
-    unless ($self->check($value)) {
-        return (undef, $self->get_message($value));
-    }
+    no warnings qw(once);
+    if ($kote::STRICT) {
+        unless ($self->check($value)) {
+            return (undef, $self->get_message($value));
+        }
 
-    Data::Lock::dlock($value);
+        Data::Lock::dlock($value);
+    }
 
     return ($value, undef);
 }

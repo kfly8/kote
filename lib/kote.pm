@@ -12,6 +12,9 @@ use Eval::TypeTiny qw( set_subname type_to_coderef );
 
 use Type::Kote;
 
+# If $STRICT is 0, type->create skips check value and convert to immutable reference
+our $STRICT = 1;
+
 # kote name must be CamelCase
 my $normal_kote_name = qr/^[A-Z][a-zA-Z0-9]*$/;
 
@@ -131,48 +134,125 @@ kote - Type::Tiny based type framework
 
 =head1 SYNOPSIS
 
-    package My::Character {
-        use v5.40;
+    use Types::Standard -types;
 
-        our @EXPORT_OK;
-        push @EXPORT_OK, qw(summary);
+    use kote CharacterName  => Str & sub { /^[A-Z][a-z]+$/ };
+    use kote CharacterLevel => Int & sub { $_ >= 1 && $_ <= 100 };
+    use kote Character => Dict[
+        name => CharacterName,
+        level => CharacterLevel,
+    ];
 
-        use Types::Standard -types;
-        use Devel::StrictMode;
+    my ($alice, $err) = Character->create({ name => 'Alice', level => 1 });
+    is $alice->{name}, 'Alice';
 
-        use kote CharacterName => Str & sub { /^[A-Z][a-z]+$/ };
-        use kote CharacterLevel => Int & sub { $_ >= 1 && $_ <= 100 };
-        use kote Character => Dict[
-            name => CharacterName,
-            level => CharacterLevel,
-        ];
+    my ($bob, $err) = Character->create({ name => 'bob', level => 0 });
+    say $err; # Error
 
-        sub summary($character) {
-            STRICT && Character->assert_valid($character);
-            return "Name: $character->{name}, Level: $character->{level}";
-        }
-    }
-
-    package main {
-        use v5.40;
-        use My::Character qw(Character summary);
-
-        my $err;
-
-        (my $alice, $err) = Character->create({name => 'Alice', level => 99});
-        say $err; # undef
-        say $alice->{name}; # Alice
-        say $alice->{level}; # 99
-        say summary($alice); # Name: Alice, Level: 99
-
-        (my $bob, $err) = Character->create({name => 'bob', level => 0});
-        say $bob; # undef
-        say $err; # Error
-    }
+    Charcter->isa('Type::Tiny'); # true
 
 =head1 DESCRIPTION
 
-kote is ...
+kote - B<means "gauntlet"🧤 in Japanese> - is a type framework based on Type::Tiny.
+
+=head2 FEATURES
+
+=over 2
+
+=item * 型の宣言が簡潔
+
+型名と制約を一度書くだけで、型を宣言できます。
+
+    use kote CharacterName => Str & sub { /^[A-Z][a-z]+$/ };
+
+=item * 値の検証が容易
+
+値が型を満たしているか簡単に検証できます。
+
+    my ($alice, $err) = CharacterName->create('Alice');
+
+=item * Type::Tiny ベース
+
+koteで宣言した型は、Type::Tinyをベースにしているので、Type::Tinyの機能をそのまま利用できます。
+
+    CharacterName->check('Alice'); # true
+
+=back
+
+=head1 CONCEPTS
+
+koteは、次の書籍に触発されています。L<Domain Modeling Made Functional|https://pragprog.com/titles/swdddf/domain-modeling-made-functional/>
+ドメイン空間ごとにとりうる値を型で宣言し、その振る舞いを純粋関数で記述しやすくできないか考え、デザインしています。
+
+=head1 DETAILS
+
+=head2 declare type
+
+koteは、型を宣言するための構文を提供します。
+
+    package My::Character;
+    use kote CharacterName => Str & sub { /^[A-Z][a-z]+$/ };
+
+左辺の型名はCamelCaseである必要があります。右辺の制約は、Type::Tinyはもちろんのこと、Type::Tinyになれる制約を指定できます。
+koteを利用するとExporter::Tinyを継承し、宣言した型を、C<@EXPORT_OK>に自動追加します。
+つまり、次のように型をインポートできます。
+
+    package main;
+    use My::Character qw(CharacterName);
+
+    CharacterName->check('Alice'); # true
+
+=head2 create value
+
+koteで宣言した型は、C<create>メソッドを持ちます。
+
+    my ($alice, $err) = Character->create({name => 'Alice', level => 1});
+    croak $err if $err;
+
+C<create>メソッドは、与えられた値が型を満たさない場合はエラーメッセージを返し、満たす場合はその値を返します。
+ただし、値がリファレンスだった場合は、不変なリファレンスに変換して返します。
+
+    $alice->{name} = 'Bob'; # Error
+    $alice->{unknown}; # Error
+
+また、エラーハンドリングを行わなかった場合、例外が発生します。
+
+    my $alice = Character->create({name => 'Alice', level => 1});
+    # => Must handle error!!
+
+=head1 TIPS
+
+=head2 export functions
+
+関数のエクスポートが、C<@EXPORT_OK>に関数を追加すればできます。
+
+    pakcage My::Character;
+
+    our @EXPORT_OK;
+    push @EXPORT_OK, qw(is_alice);
+
+    use kote CharacterName => Str & sub { /^[A-Z][a-z]+$/ };
+
+    sub is_alice($name) {
+        # CharacterName->assert_valid($name);
+        $name eq 'Alice';
+    }
+
+    package main;
+    use My::Character qw(CharacterName is_alice);
+
+=head2 skip check value
+
+パフォーマンスの都合、値の検証や不変なリファレンスへの変換をスキップしたい場合、C<$kote::STRICT>を0に設定します。
+ただし、検証すべき値をスキップしないように十分注意してください。
+
+    local $kote::STRICT = 0;
+    my ($alice, $err) = CharacterName->create(1234);
+    $err; # No Error
+
+=head1 THANKS
+
+L<Type::Tiny>の作者、Toby Inkster氏に感謝します。
 
 =head1 LICENSE
 
