@@ -131,7 +131,44 @@ kote - It's new $module
 
 =head1 SYNOPSIS
 
-    use kote;
+    package My::Character {
+        use v5.40;
+
+        our @EXPORT_OK;
+        push @EXPORT_OK, qw(summary);
+
+        use Types::Standard -types;
+        use Devel::StrictMode;
+
+        use kote CharacterName => Str & sub { /^[A-Z][a-z]+$/ };
+        use kote CharacterLevel => Int & sub { $_ >= 1 && $_ <= 100 };
+        use kote Character => Dict[
+            name => CharacterName,
+            level => CharacterLevel,
+        ];
+
+        sub summary($character) {
+            STRICT && Character->assert_valid($character);
+            return "Name: $character->{name}, Level: $character->{level}";
+        }
+    }
+
+    package main {
+        use v5.40;
+        use My::Character qw(Character summary);
+
+        my $err;
+
+        (my $alice, $err) = Character->create({name => 'Alice', level => 99});
+        say $err; # undef
+        say $alice->{name}; # Alice
+        say $alice->{level}; # 99
+        say summary($alice); # Name: Alice, Level: 99
+
+        (my $bob, $err) = Character->create({name => 'bob', level => 0});
+        say $bob; # undef
+        say $err; # Error
+    }
 
 =head1 DESCRIPTION
 
