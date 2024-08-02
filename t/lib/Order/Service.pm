@@ -6,7 +6,7 @@ use utf8;
 use lib 't/lib';
 
 our @EXPORT_OK;
-push @EXPORT_OK, qw(order);
+push @EXPORT_OK, qw(toOrder order_total_price);
 
 use Carp qw(croak);
 use Types::Standard -types;
@@ -24,7 +24,7 @@ use kote Order => Dict[
     list => ArrayRef[OrderMenu],
 ];
 
-sub order {
+sub toOrder {
     my ($customer, $menu, $amount) = @_;
 
     my $err;
@@ -39,6 +39,17 @@ sub order {
         customer => $customer,
         list => [$order_menu],
     });
+}
+
+sub order_total_price {
+    my $order = shift;
+
+    my $total = 0;
+    for my $order_menu (@{$order->{list}}) {
+        $total += $order_menu->{menu}{price} * $order_menu->{amount};
+    }
+
+    return $total;
 }
 
 1;

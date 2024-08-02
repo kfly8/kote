@@ -4,9 +4,9 @@ use lib 't/lib';
 
 use Order::Customer qw(toCustomer);
 use Order::Menu qw(Menu);
-use Order::Service qw(order);
+use Order::Service qw(toOrder order_total_price);
 
-subtest 'order' => sub {
+subtest 'order_total_price' => sub {
     my $err;
 
     (my $alice, $err) = toCustomer({ first_name => 'Alice', last_name => 'Liddell', email_address => ''});
@@ -15,8 +15,10 @@ subtest 'order' => sub {
     (my $menu, $err) = Menu->create({name => 'Curry', price => 1000});
     ok !$err;
 
-    (my $order, $err) = order($alice, $menu, 2);
+    (my $order, $err) = toOrder($alice, $menu, 2);
     ok !$err;
+
+    is order_total_price($order), 2000;
 
     is $order, {
         customer => {
