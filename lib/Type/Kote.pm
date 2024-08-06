@@ -6,24 +6,31 @@ use parent qw(Type::Tiny);
 
 use Data::Lock ();
 use Carp ();
+use Types::Standard ();
 
 use constant STRICT => $ENV{KOTE_STRICT} // 1;
 
 sub strictly_create {
-    my ($self, $value) = @_;
+    my ($self, @values) = @_;
 
     Carp::croak "Must handle error" unless wantarray;
 
-    unless ($self->check($value)) {
-        return (undef, $self->get_message($value));
+    unless ($self->all(@values)) {
+        if (@values == 1) {
+            return ($self->get_message($values[0]), undef);
+        }
+        else {
+            my $list = Types::Standard::ArrayRef[$self];
+            return ($list->get_message(\@values), undef);
+        }
     }
 
-    Data::Lock::dlock($value);
+    Data::Lock::dlock($_) for @values;
 
-    return ($value, undef);
+    return (undef, @values);
 }
 
 sub create;
-*create = STRICT ? \&strictly_create : sub { ($_[1], undef) };
+*create = STRICT ? \&strictly_create : sub { (undef, @_) };
 
 1;
