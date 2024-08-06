@@ -12,9 +12,6 @@ use Eval::TypeTiny qw( set_subname type_to_coderef );
 
 use Type::Kote;
 
-# kote name must be CamelCase
-my $normal_kote_name = qr/^[A-Z][a-zA-Z0-9]*$/;
-
 my %forbidden_kote_name = map { $_ => 1 } qw{
     BEGIN CHECK DESTROY END INIT UNITCHECK
     AUTOLOAD STDIN STDOUT STDERR ARGV ARGVOUT ENV INC SIG
@@ -44,13 +41,10 @@ sub _validate_name {
     my ($class, $name) = @_;
 
     if (!$name) {
-        return 'kote name is not given';
-    }
-    elsif ($name !~ $normal_kote_name) {
-        return "kote name '$name' is not CamelCase.";
+        return 'name is required';
     }
     elsif ($forbidden_kote_name{$name}) {
-        return "kote name '$name' is forbidden.";
+        return "'$name' is forbidden.";
     }
 
     return;
@@ -70,11 +64,17 @@ sub _create_kote {
         return (undef, "$name: type must be able to be a Type::Tiny");
     }
 
-    my $kote = Type::Kote->new(
-        name    => $name,
-        parent  => $type,
-        library => $caller,
-    );
+    my $kote = eval {
+        Type::Kote->new(
+            name    => $name,
+            parent  => $type,
+            library => $caller,
+        );
+    };
+    if ($@) {
+        warn $@;
+        return (undef, "Failed to create '$name' type");
+    }
 
     # make kote immutable
     $kote->coercion->freeze;
@@ -192,11 +192,11 @@ This idea works for dynamically typed languages like Perl too. By clearly statin
 
 Kote provides a syntax for declaring types.
 
-    package My::Character;
-    use kote CharacterName => Str & sub { /^[A-Z][a-z]+$/ };
+    use kote TYPE_NAME => TYPE_CONSTRAINT;
 
-The first argument is the type name, which must be CamelCase.
-The second argument is the type constraint, which must be a Type::Tiny object or convertible to one.
+The first argument is a type name, and the second argument is a type constraint.
+Type name must begin with an uppercase letter and can only contain alphabetic letter, digits and underscores.
+Type constraints must be a Type::Tiny object or something that can be converted to one.
 
 Using Kote inherits L<Exporter::Tiny> and automatically adds the declared type to C<@EXPORT_OK>.
 This means you can import types as follows:
