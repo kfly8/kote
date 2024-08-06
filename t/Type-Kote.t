@@ -102,17 +102,6 @@ subtest 'create' => sub {
         is $list2, undef, 'invalid value';
         ok $err, 'Error';
     };
-
-    subtest '$kote::STRICT' => sub {
-        my $err;
-
-        local $kote::STRICT = 0;
-        (my $bob, $err) = Character->create({name => 'bob', level => 0});
-        is $bob, { name => 'bob', level => 0 }, 'Invalid value but no error';
-        ok !$err, 'No Error';
-
-        ok lives { $bob->{name} = 'Bob' }, 'writable';
-    };
 };
 
 done_testing;

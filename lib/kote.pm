@@ -12,9 +12,6 @@ use Eval::TypeTiny qw( set_subname type_to_coderef );
 
 use Type::Kote;
 
-# If $STRICT is 0, type->create skips check value and convert to immutable reference
-our $STRICT = 1;
-
 # kote name must be CamelCase
 my $normal_kote_name = qr/^[A-Z][a-zA-Z0-9]*$/;
 
@@ -260,12 +257,21 @@ You can export functions as well as types by pushing them to C<@EXPORT_OK>.
 
 =head2 Skip Check Value
 
-If C<$kote::STRICT> is set to false, validation of the value and conversion to make it to immutable are skipped.
-However, be careful not to skip values that need to be validated.
+If C<$ENV{KOTE_STRICT}> is set to false during the BEGIN phase, the validation of the value and the conversion to make it immutable are skipped. However, be careful not to skip values that need to be validated.
 
-    local $kote::STRICT = 0;
-    my ($alice, $err) = CharacterName->create(1234);
+    BEGIN {
+        $ENV{KOTE_STRICT} = 0;
+    }
+
+    use kote Name => Str & sub { /^[A-Z][a-z]+$/ };
+
+    my ($alice, $err) = Name->create(1234);
     $err; # No Error
+
+If C<$ENV{KOTE_STRICT}> is set to false but you still want to perform validation, you should use the C<strictly_create> method instead of the C<create> method.
+
+    my ($alice, $err) = Name->strictly_create(1234);
+    $err; # Error!!
 
 =head1 THANKS
 
