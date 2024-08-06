@@ -59,4 +59,9 @@ subtest 'Invalid type' => sub {
     like $@, qr/^Bar: type must be able to be a Type::Tiny/;
 };
 
+subtest 'Valid type' => sub {
+    eval "use kote Bar1 => sub { 1 };";
+    ok !$@, 'CodeRef';
+};
+
 done_testing;
