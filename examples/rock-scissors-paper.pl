@@ -55,7 +55,7 @@ use kote GameError => Enum[
 #
 # returns (GameResult, Undef) | (Undef, GameError)
 sub play_game($players) {
-    STRICT && Player->into(ArrayRef)->assert_valid($players);
+    STRICT && Player->item_of(ArrayRef)->assert_valid($players);
 
     if ($players->@* < MIN_PLAYERS) {
         return (undef, GAME_ERROR_TOO_FEW_PLAYERS);
@@ -136,7 +136,7 @@ sub main() {
 
     my $err;
 
-    (my $players, $err) = Player->into(ArrayRef)->create(\@player_names);
+    (my $players, $err) = Player->item_of(ArrayRef)->create(\@player_names);
     die $err if $err;
 
     (my $game_result, $err) = play_game($players);

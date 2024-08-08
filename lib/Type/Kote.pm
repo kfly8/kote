@@ -28,7 +28,7 @@ sub strictly_create {
 sub create;
 *create = STRICT ? \&strictly_create : sub { ($_[1], undef) };
 
-sub into {
+sub item_of {
     my ($self, $type, @args) = @_;
     my $t = $type->parameterize($self, @args);
     _to_TypeKote($t);
@@ -36,12 +36,12 @@ sub into {
 
 sub maybe {
     my $self = shift;
-    $self->into(Types::Standard::Maybe)
+    $self->item_of(Types::Standard::Maybe)
 }
 
 sub optional {
     my $self = shift;
-    $self->into(Types::Standard::Optional)
+    $self->item_of(Types::Standard::Optional)
 }
 
 # override

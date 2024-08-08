@@ -3,15 +3,15 @@ use Types::Standard qw(Str Int Dict ArrayRef);
 
 use kote Name => Str;
 
-subtest 'Test `into` method' => sub {
+subtest 'Test `item_of` method' => sub {
 
     subtest 'Given non parameterizable type' => sub {
-        ok dies { Name->into(Str) };
-        ok dies { Name->into(sub { 1 }) };
+        ok dies { Name->item_of(Str) };
+        ok dies { Name->item_of(sub { 1 }) };
     };
 
     subtest 'Given parameterizable type' => sub {
-        my $List = Name->into(ArrayRef);
+        my $List = Name->item_of(ArrayRef);
         isa_ok $List, 'Type::Kote', 'Type::Tiny';
         is $List->display_name, 'ArrayRef[Name]', 'display_name';
 
@@ -21,7 +21,7 @@ subtest 'Test `into` method' => sub {
     };
 
     subtest 'Given parameterizable type with arguments' => sub {
-        my $List = Name->into(ArrayRef, 1, 2);
+        my $List = Name->item_of(ArrayRef, 1, 2);
         isa_ok $List, 'Type::Kote', 'Type::Tiny';
         is $List->display_name, 'ArrayRef[Name,1,2]', 'display_name';
 
