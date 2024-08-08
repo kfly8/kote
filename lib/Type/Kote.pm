@@ -6,6 +6,8 @@ use parent qw(Type::Tiny);
 
 use Data::Lock ();
 use Carp ();
+use Scalar::Util ();
+use Types::Standard ();
 
 use constant STRICT => $ENV{KOTE_STRICT} // 1;
 
@@ -26,11 +28,20 @@ sub strictly_create {
 sub create;
 *create = STRICT ? \&strictly_create : sub { ($_[1], undef) };
 
-sub as {
+sub into {
     my ($self, $type, @args) = @_;
+    my $t = $type->parameterize($self, @args);
+    _to_TypeKote($t);
+}
 
-    my $new = $type->parameterize($self, @args);
-    $self->to_kote($new);
+sub maybe {
+    my $self = shift;
+    $self->into(Types::Standard::Maybe)
+}
+
+sub optional {
+    my $self = shift;
+    $self->into(Types::Standard::Optional)
 }
 
 # override
@@ -41,27 +52,22 @@ sub child_type_class {
 # override
 sub _build_complementary_type {
     my $self = shift;
-    my $type = $self->SUPER::_build_complementary_type();
-    $self->to_kote($type);
+    my $t = $self->SUPER::_build_complementary_type();
+    _to_TypeKote($t);
 }
 
-sub to_kote {
-    my ($self, $type) = @_;
-
+sub _to_TypeKote {
+    my $type = shift;
     if (Scalar::Util::blessed($type) && $type->isa('Type::Kote')) {
         return $type;
     }
-
-    $type = Types::TypeTiny::to_TypeTiny($type);
-    if (Scalar::Util::blessed($type) && $type->isa('Type::Tiny')) {
-        return $self->child_type_class->new(
-            display_name => $type->display_name,
-            parent       => $type,
-            library      => $self->library,
+    else {
+        my $t = Types::TypeTiny::to_TypeTiny($type);
+        return Type::Kote->new(
+            display_name => $t->display_name,
+            parent       => $t,
         );
     }
-
-    $type;
 }
 
 1;
