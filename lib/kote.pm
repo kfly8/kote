@@ -59,6 +59,10 @@ sub _to_type {
 sub _create_kote {
     my ($class, $name, $type, $caller) = @_;
 
+    if (blessed($type) && $type->isa('Type::Kote')) {
+        return ($type, undef);
+    }
+
     $type = $class->_to_type($type);
     unless (blessed($type) && $type->isa('Type::Tiny')) {
         return (undef, "$name: type must be able to be a Type::Tiny");

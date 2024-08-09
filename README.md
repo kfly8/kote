@@ -71,12 +71,12 @@ This idea works for dynamically typed languages like Perl too. By clearly statin
 Kote provides a syntax for declaring types.
 
 ```perl
-package My::Character;
-use kote CharacterName => Str & sub { /^[A-Z][a-z]+$/ };
+use kote TYPE_NAME => TYPE_CONSTRAINT;
 ```
 
-The first argument is the type name, which must be CamelCase.
-The second argument is the type constraint, which must be a Type::Tiny object or convertible to one.
+The first argument is a type name, and the second argument is a type constraint.
+Type name must begin with an uppercase letter and can only contain alphabetic letter, digits and underscores.
+Type constraints must be a Type::Tiny object or something that can be converted to one.
 
 Using Kote inherits [Exporter::Tiny](https://metacpan.org/pod/Exporter%3A%3ATiny) and automatically adds the declared type to `@EXPORT_OK`.
 This means you can import types as follows:
@@ -151,13 +151,24 @@ use My::Character qw(CharacterName is_alice);
 
 ## Skip Check Value
 
-If `$kote::STRICT` is set to false, validation of the value and conversion to make it to immutable are skipped.
-However, be careful not to skip values that need to be validated.
+If `$ENV{KOTE_STRICT}` is set to false during the BEGIN phase, the validation of the value and the conversion to make it immutable are skipped. However, be careful not to skip values that need to be validated.
 
 ```perl
-local $kote::STRICT = 0;
-my ($alice, $err) = CharacterName->create(1234);
+BEGIN {
+    $ENV{KOTE_STRICT} = 0;
+}
+
+use kote Name => Str & sub { /^[A-Z][a-z]+$/ };
+
+my ($alice, $err) = Name->create(1234);
 $err; # No Error
+```
+
+If `$ENV{KOTE_STRICT}` is set to false but you still want to perform validation, you should use the `strictly_create` method instead of the `create` method.
+
+```perl
+my ($alice, $err) = Name->strictly_create(1234);
+$err; # Error!!
 ```
 
 # THANKS

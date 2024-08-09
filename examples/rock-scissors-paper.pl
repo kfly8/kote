@@ -54,14 +54,14 @@ use kote GameError => Enum[
 # play a game between multiple players
 #
 # returns (GameResult, Undef) | (Undef, GameError)
-sub play_game(@players) {
-    STRICT && do { Player->assert_valid($_) for @players };
+sub play_game($players) {
+    STRICT && Player->item_of(ArrayRef)->assert_valid($players);
 
-    if (@players < MIN_PLAYERS) {
+    if ($players->@* < MIN_PLAYERS) {
         return (undef, GAME_ERROR_TOO_FEW_PLAYERS);
     }
 
-    if (@players > MAX_PLAYERS) {
+    if ($players->@* > MAX_PLAYERS) {
         return (undef, GAME_ERROR_TOO_MANY_PLAYERS);
     }
 
@@ -74,7 +74,7 @@ sub play_game(@players) {
             return (undef, GAME_ERROR_TOO_MANY_ROUNDS);
         }
 
-        my $player_hands = [ map { { player => $_, hand => pick_hand() } } @players ];
+        my $player_hands = [ map { { player => $_, hand => pick_hand() } } $players->@* ];
         my $winners = round($player_hands);
 
         if ($winners->@* == 0) {
@@ -134,14 +134,12 @@ sub pick_hand() { sample 1, (ROCK, SCISSORS, PAPER); }
 sub main() {
     my @player_names = @ARGV;
 
-    my @players;
-    for my $player_name (@player_names) {
-        my ($player, $err) = Player->create($player_name);
-        die $err if $err;
-        push @players, $player;
-    }
+    my $err;
 
-    my ($game_result, $err) = play_game(@players);
+    (my $players, $err) = Player->item_of(ArrayRef)->create(\@player_names);
+    die $err if $err;
+
+    (my $game_result, $err) = play_game($players);
     if ($err) {
         show_error_result($err);
     }
