@@ -71,3 +71,94 @@ sub _to_TypeKote {
 }
 
 1;
+
+=head1 NAME
+
+Type::Kote - subclass of Type::Tiny
+
+=head1 SYNOPSIS
+
+    use Type::Kote;
+    use Types::Standard -types;
+
+    my $type = Type::Kote->new(
+        parent => Int,
+        constraint => sub { $_ > 0 },
+    );
+
+    # You can use Type::Tiny methods
+    $type->check(1); # true
+    my $subtype = $type->where(sub { $_ < 10 }); # isa Type::Kote
+
+    # Following methods are added
+
+    # type check and lock
+    ($value, $error) = $type->create(123);
+    ($value, $error) = $type->create(0); # $error has error message
+
+    # create a Kote type
+    $list = $type->item_of(ArrayRef);
+    $list->check([1, 2, 3]); # true
+
+    # shortcuts
+    $type->maybe->check(undef); # true. same as $type->item_of(Maybe)
+
+    my $d = Dict[foo => $type->optional];
+    $d->check({}); # true. same as $type->item_of(Optional)
+
+
+=head1 DESCRIPTION
+
+C<Type::Kote> is a subclass of L<Type::Tiny> that provides additional functionalities for value creation and type manipulation.
+
+=head1 CONFIGURATION
+
+=head2 C<$ENV{KOTE_STRICT}>
+
+If C<$ENV{KOTE_STRICT}> is set to a true value, C<STRICT> constant is true.
+Default is true.
+
+=head1 METHODS
+
+=head2 C<< Type::Kote->new(%args) >>
+
+Create a new C<Type::Kote> object. C<%args> are the same as L<Type::Tiny>.
+
+=head2 C<< ($value, $error) = $type->strictly_create($value) >>
+
+    ($value, $error) = $MyInt->strictly_create(123);
+    # => (123, undef);
+
+    ($value, $error) = $MyInt->strictly_create({});
+    # => (undef, );
+
+Given value is checked by the type constraint.
+If the value is invalid, C<undef> is returned and C<$error> is the error message.
+If the value is valid, C<$value> is returned and C<$error> is C<undef>, and the value is locked if the value is reference.
+
+=head2 C<< ($value, $error) = $type->create($value) >>
+
+If C<STRICT> is true, this method is an alias of C<strictly_create>.
+If false, this method do nothing and return the given value.
+
+=head2 C<< $subtype = $type->item_of($type, @args) >>
+
+    use kote Name => Str & sub { /^[A-Z][a-z]+$/ };
+
+    Name->item_of(ArrayRef)->check(['Alice']); # true
+
+
+=head1 LICENSE
+
+Copyright (C) kobaken.
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=head1 AUTHOR
+
+kobaken E<lt>kentafly88@gmail.comE<gt>
+
+=cut
+
+
