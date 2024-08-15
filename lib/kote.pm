@@ -1,14 +1,10 @@
 package kote;
-use strict;
-use warnings;
+use v5.38;
 
 our $VERSION = "0.01";
 
 use Carp qw(croak);
-use Scalar::Util qw(blessed);
-
-use Types::TypeTiny ();
-use Eval::TypeTiny qw( set_subname type_to_coderef );
+use Sub::Util qw(set_subname);
 
 use Type::Kote;
 
@@ -19,18 +15,18 @@ my %forbidden_kote_name = map { $_ => 1 } qw{
 
 sub import {
     my $class = shift;
-    my ($name, $type) = @_;
+    my ($name, $checker) = @_;
 
     my $err;
 
     $err = $class->_validate_name($name);
     croak $err if $err;
 
-    my $caller = caller;
-    (my $kote, $err) = $class->_create_kote($name, $type, $caller);
-    croak $err if $err;
+    my $kote = Type::Kote->make($name, $checker);
+    croak "Cannot make kote for $name" unless $kote;
 
-    $err = $class->_add_kote($name, $kote, $caller);
+    my $caller = caller;
+    $err = $class->_install_kote($name, $kote, $caller);
     croak $err if $err;
 
     $err = $class->_setup_exporter($caller);
@@ -50,50 +46,14 @@ sub _validate_name {
     return;
 }
 
-sub _to_type {
-    my ($class, $type) = @_;
-
-    Types::TypeTiny::to_TypeTiny($type);
-}
-
-sub _create_kote {
-    my ($class, $name, $type, $caller) = @_;
-
-    if (blessed($type) && $type->isa('Type::Kote')) {
-        return ($type, undef);
-    }
-
-    $type = $class->_to_type($type);
-    unless (blessed($type) && $type->isa('Type::Tiny')) {
-        return (undef, "$name: type must be able to be a Type::Tiny");
-    }
-
-    my $kote = eval {
-        Type::Kote->new(
-            name    => $name,
-            parent  => $type,
-            library => $caller,
-        );
-    };
-    if ($@) {
-        warn $@;
-        return (undef, "Failed to create '$name' type");
-    }
-
-    # make kote immutable
-    $kote->coercion->freeze;
-
-    return ($kote, undef);
-}
-
-sub _add_kote {
+sub _install_kote {
     my ($class, $name, $kote, $caller) = @_;
 
     if ($caller->can($name)) {
         return "'$name' is already defined";
     }
 
-    my $code = type_to_coderef($kote);
+    my $code = sub () { $kote };
 
     {
         no strict "refs";

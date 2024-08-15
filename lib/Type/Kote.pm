@@ -1,73 +1,67 @@
-package Type::Kote;
-use strict;
-use warnings;
+use v5.38;
+use experimental qw(class);
 
-use parent qw(Type::Tiny);
-
-use Data::Lock ();
 use Carp ();
-use Scalar::Util ();
-use Types::Standard ();
+use Data::Lock ();
 
-use constant STRICT => $ENV{KOTE_STRICT} // 1;
+class Type::Kote {
+    field $name :param;
+    field $checker :param;
 
-sub strictly_create {
-    my ($self, $value) = @_;
-
-    Carp::croak "Must handle error" unless wantarray;
-
-    unless ($self->check($value)) {
-        return (undef, $self->get_message($value));
+    ADJUST {
+        # TODO
+        # $name must be ...
+        # $checker must be ...
     }
 
-    Data::Lock::dlock($value);
-
-    return ($value, undef);
-}
-
-sub create;
-*create = STRICT ? \&strictly_create : sub { ($_[1], undef) };
-
-sub item_of {
-    my ($self, $type, @args) = @_;
-    my $t = $type->parameterize($self, @args);
-    _to_TypeKote($t);
-}
-
-sub maybe {
-    my $self = shift;
-    $self->item_of(Types::Standard::Maybe)
-}
-
-sub optional {
-    my $self = shift;
-    $self->item_of(Types::Standard::Optional)
-}
-
-# override
-sub child_type_class {
-    __PACKAGE__
-}
-
-# override
-sub _build_complementary_type {
-    my $self = shift;
-    my $t = $self->SUPER::_build_complementary_type();
-    _to_TypeKote($t);
-}
-
-sub _to_TypeKote {
-    my $type = shift;
-    if (Scalar::Util::blessed($type) && $type->isa('Type::Kote')) {
-        return $type;
+    method check($value) {
+        local $_ = $value;
+        !!$checker->($value);
     }
-    else {
-        my $t = Types::TypeTiny::to_TypeTiny($type);
-        return Type::Kote->new(
-            display_name => $t->display_name,
-            parent       => $t,
-        );
+
+    method get_message($value) {
+        "Value of '$name' is invalid";
+    }
+
+    method create($value) {
+        Carp::croak "Must handle error" unless wantarray;
+
+        unless ($checker->($value)) {
+            return (undef, $self->get_message($value));
+        }
+
+        Data::Lock::dlock($value);
+
+        $value;
+    }
+
+
+    sub make($class, $name, $checker) {
+        if ($checker isa Type::Kote) {
+            return $checker;
+        }
+
+        if ($checker isa Data::Checks::Constraint) {
+            return $class->new(
+                name    => $name,
+                checker => sub { $checker->check($_[0]) },
+            );
+        }
+
+        if ($checker isa Type::Tiny) {
+            return $class->new(
+                name    => $name,
+                checker => $checker->compiled_check,
+            )
+        }
+
+        if (reftype($checker) eq 'CODE') {
+            return $class->new(
+                name    => $name,
+                checker => $checker,
+            );
+        }
+
+        return undef;
     }
 }
-
-1;
